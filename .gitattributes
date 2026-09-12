@@ -1,0 +1,8 @@
+# Скрипты и Dockerfile исполняются внутри Linux-контейнера. CRLF, который
+# git на Windows подставляет при core.autocrlf=true, ломает шебанг
+# entrypoint.sh, и контейнер падает с "exec /entrypoint.sh: no such file
+# or directory".
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
