@@ -1,75 +1,75 @@
 # vless-mikrotik-client
 
-A minimal Docker image that runs [sing-box](https://sing-box.sagernet.org/) as a
-VLESS client with a TUN interface, configured entirely from environment
-variables. Meant to run as a container on MikroTik RouterOS (v7, with the
-Container feature enabled) so the router itself can send traffic through a
-VLESS server -- REALITY or plain TLS/WS, not the newer VLESS Encryption
-(see **Limitations** below).
+Минимальный Docker-образ, который запускает [sing-box](https://sing-box.sagernet.org/)
+в роли VLESS-клиента с TUN-интерфейсом, полностью настраиваемый через
+переменные окружения. Предназначен для запуска в контейнере на MikroTik
+RouterOS (v7, с включённой функцией Container), чтобы сам роутер мог
+направлять трафик через VLESS-сервер — REALITY или обычный TLS/WS, но не
+через новый VLESS Encryption (см. **Ограничения** ниже).
 
-Verified locally (Windows, against the real `sing-box` binary via
-`sing-box check`): the entrypoint's config generation for both a REALITY
-profile and a WS+TLS profile, required-variable validation, and the
-Dockerfile's download step (asset exists, internal tar layout matches what
-the Dockerfile expects). **Not verified**: actual behavior on RouterOS
-hardware/Container feature, or a real end-to-end tunnel -- see the RouterOS
-section for why.
+Проверено локально (Windows, на реальном бинарнике `sing-box` через
+`sing-box check`): генерация конфига в entrypoint'е для профилей REALITY и
+WS+TLS, проверка обязательных переменных, и шаг скачивания в Dockerfile
+(ассет существует, структура внутри архива совпадает с тем, что ожидает
+Dockerfile). **Не проверено**: реальное поведение на железе RouterOS/в
+функции Container, как и сквозной туннель целиком — см. раздел про
+RouterOS, почему.
 
-## Environment variables
+## Переменные окружения
 
-### Required
+### Обязательные
 
-| Variable | Example | Notes |
+| Переменная | Пример | Описание |
 |---|---|---|
-| `VLESS_SERVER` | `vpn.srv.com` | Server address (domain or IP) |
-| `VLESS_PORT` | `4443` | Server port |
-| `VLESS_UUID` | `xxxxxxxx-xxxx-...` | User UUID |
+| `VLESS_SERVER` | `vpn.srv.com` | Адрес сервера (домен или IP) |
+| `VLESS_PORT` | `4443` | Порт сервера |
+| `VLESS_UUID` | `xxxxxxxx-xxxx-...` | UUID пользователя |
 
-### Security (default: `reality`)
+### Безопасность (по умолчанию: `reality`)
 
-| Variable | Default | Notes |
+| Переменная | По умолчанию | Описание |
 |---|---|---|
-| `VLESS_SECURITY` | `reality` | `reality`, `tls`, or `none` |
-| `VLESS_SERVER_NAME` | *(required unless `none`)* | SNI, e.g. `github.com` or your domain |
-| `VLESS_REALITY_PUBLIC_KEY` | *(required if `reality`)* | from your server's REALITY key generator |
-| `VLESS_REALITY_SHORT_ID` | `""` | one of the server's `shortIds` |
-| `VLESS_FINGERPRINT` | `chrome` | uTLS fingerprint; set `""` to disable |
-| `VLESS_ALPN` | `""` | comma-separated, e.g. `h2,http/1.1` |
-| `VLESS_ALLOW_INSECURE` | `false` | skip certificate validation (testing only) |
+| `VLESS_SECURITY` | `reality` | `reality`, `tls` или `none` |
+| `VLESS_SERVER_NAME` | *(обязательна, если не `none`)* | SNI, например `github.com` или ваш домен |
+| `VLESS_REALITY_PUBLIC_KEY` | *(обязательна при `reality`)* | из генератора REALITY-ключей на вашем сервере |
+| `VLESS_REALITY_SHORT_ID` | `""` | один из `shortIds` сервера |
+| `VLESS_FINGERPRINT` | `chrome` | uTLS-отпечаток; поставьте `""`, чтобы отключить |
+| `VLESS_ALPN` | `""` | через запятую, например `h2,http/1.1` |
+| `VLESS_ALLOW_INSECURE` | `false` | не проверять сертификат (только для тестов) |
 
-### Transport (default: `tcp`, i.e. raw -- what REALITY uses)
+### Транспорт (по умолчанию: `tcp`, т.е. голый — то, что использует REALITY)
 
-| Variable | Default | Notes |
+| Переменная | По умолчанию | Описание |
 |---|---|---|
-| `VLESS_TRANSPORT` | `tcp` | `tcp` or `ws` |
-| `VLESS_WS_PATH` | `/` | only used when `VLESS_TRANSPORT=ws` |
-| `VLESS_WS_HOST` | *(= `VLESS_SERVER_NAME`)* | Host header, only used when `ws` |
-| `VLESS_FLOW` | `""` | e.g. `xtls-rprx-vision`; leave empty for REALITY-without-Vision or WS |
+| `VLESS_TRANSPORT` | `tcp` | `tcp` или `ws` |
+| `VLESS_WS_PATH` | `/` | используется только при `VLESS_TRANSPORT=ws` |
+| `VLESS_WS_HOST` | *(= `VLESS_SERVER_NAME`)* | заголовок Host, только при `ws` |
+| `VLESS_FLOW` | `""` | например `xtls-rprx-vision`; оставьте пустым для REALITY без Vision или для WS |
 
-### TUN / misc
+### TUN и прочее
 
-| Variable | Default | Notes |
+| Переменная | По умолчанию | Описание |
 |---|---|---|
-| `TUN_INTERFACE_NAME` | `vless-tun` | virtual interface name inside the container |
-| `TUN_ADDRESS` | `172.19.0.1/30` | TUN interface CIDR |
+| `TUN_INTERFACE_NAME` | `vless-tun` | имя виртуального интерфейса внутри контейнера |
+| `TUN_ADDRESS` | `172.19.0.1/30` | CIDR TUN-интерфейса |
 | `TUN_MTU` | `1420` | |
-| `TUN_STACK` | `system` | `system`, `gvisor`, or `mixed` |
-| `DNS_SERVER` | `1.1.1.1` | resolves domains through the tunnel (avoids DNS leaks) |
-| `LOG_LEVEL` | `info` | sing-box log level |
+| `TUN_STACK` | `system` | `system`, `gvisor` или `mixed` |
+| `DNS_SERVER` | `1.1.1.1` | резолвит домены через туннель (чтобы не было утечки DNS) |
+| `LOG_LEVEL` | `info` | уровень логирования sing-box |
 
-## Building the image
+## Сборка образа
 
 ```bash
 docker build -t vless-mikrotik-client --build-arg SINGBOX_ARCH=arm64 .
 ```
 
-`SINGBOX_ARCH` must match your router's CPU: `arm64`, `amd64`, `armv7`,
-`armv6`, or `armv5`. Confirmed to exist as a sing-box v1.14.0 release asset
-for all of those.
+`SINGBOX_ARCH` должен соответствовать процессору вашего роутера: `arm64`,
+`amd64`, `armv7`, `armv6` или `armv5`. Подтверждено, что для всех этих
+архитектур существует нужный ассет в релизе sing-box v1.14.0.
 
-## Two example profiles
+## Два примера профилей
 
-**REALITY** (matches a `VLESS TCP REALITY` inbound):
+**REALITY** (соответствует инбаунду `VLESS TCP REALITY`):
 ```bash
 docker run --rm --cap-add=NET_ADMIN --device /dev/net/tun \
   -e VLESS_SERVER=1.2.3.4 -e VLESS_PORT=4443 -e VLESS_UUID=... \
@@ -78,7 +78,7 @@ docker run --rm --cap-add=NET_ADMIN --device /dev/net/tun \
   vless-mikrotik-client
 ```
 
-**WS + TLS behind a CDN** (matches a `VLESS WS TLS CDN` inbound):
+**WS + TLS за CDN** (соответствует инбаунду `VLESS WS TLS CDN`):
 ```bash
 docker run --rm --cap-add=NET_ADMIN --device /dev/net/tun \
   -e VLESS_SERVER=cat.example.com -e VLESS_PORT=443 -e VLESS_UUID=... \
@@ -87,27 +87,27 @@ docker run --rm --cap-add=NET_ADMIN --device /dev/net/tun \
   vless-mikrotik-client
 ```
 
-## Limitations
+## Ограничения
 
-- **VLESS Encryption (the post-quantum `mlkem768x25519plus` scheme) is not
-  supported.** Verified directly against the real sing-box v1.14.0 binary:
-  it rejects an `encryption` field on a VLESS outbound with
-  `json: unknown field "encryption"`. That feature currently only exists in
-  xray-core (and one community sing-box fork, not mainline). Point this
-  client at your REALITY or WS+TLS inbound instead.
-- TUN mode needs `NET_ADMIN` and `/dev/net/tun` inside the container --
-  confirmed these are things RouterOS Container generally supports, but the
-  *exact* RouterOS command to grant them may differ by RouterOS version (see
-  below).
+- **VLESS Encryption (пост-квантовая схема `mlkem768x25519plus`) не
+  поддерживается.** Проверено напрямую на реальном бинарнике sing-box
+  v1.14.0: он отвергает поле `encryption` в VLESS outbound с ошибкой
+  `json: unknown field "encryption"`. Эта фича сейчас существует только в
+  xray-core (и в одном community-форке sing-box, не в основной ветке).
+  Направляйте этот клиент на ваш инбаунд REALITY или WS+TLS вместо неё.
+- Режиму TUN нужны `NET_ADMIN` и `/dev/net/tun` внутри контейнера —
+  подтверждено, что RouterOS Container в целом это поддерживает, но
+  *точная* команда RouterOS для выдачи этих прав может отличаться в разных
+  версиях (см. ниже).
 
-## Running it on RouterOS (Container feature)
+## Запуск на RouterOS (функция Container)
 
-This part is **not verified against real hardware** -- I don't have a
-MikroTik device to test against. It's assembled from MikroTik's own
-Container documentation; treat it as a starting point, not a copy-paste
-guarantee, and expect to adjust it for your RouterOS version.
+Эта часть **не проверена на реальном железе** — у меня нет устройства
+MikroTik для тестирования. Собрана по официальной документации MikroTik по
+контейнерам; считайте это отправной точкой, а не гарантированным
+copy-paste-решением, и будьте готовы подстраивать под вашу версию RouterOS.
 
-1. Enable the Container feature and set up networking for it:
+1. Включите функцию Container и настройте для неё сеть:
    ```
    /system/device-mode/update container=yes
    /interface/veth/add name=veth-vless address=172.17.0.2/24 gateway=172.17.0.1
@@ -117,7 +117,7 @@ guarantee, and expect to adjust it for your RouterOS version.
    /ip/firewall/nat/add chain=srcnat action=masquerade src-address=172.17.0.0/24
    ```
 
-2. Define your VLESS_*/TUN_* variables:
+2. Задайте переменные VLESS_*/TUN_*:
    ```
    /container/envs/add list=vless-env key=VLESS_SERVER value="cat.example.com"
    /container/envs/add list=vless-env key=VLESS_PORT value="443"
@@ -128,12 +128,12 @@ guarantee, and expect to adjust it for your RouterOS version.
    /container/envs/add list=vless-env key=VLESS_WS_PATH value="/cat-ws"
    ```
 
-3. Add the container. Getting `NET_ADMIN`/`/dev/net/tun` granted is the part
-   I can't give you verified syntax for -- check
-   `/container/config` and your RouterOS version's Container docs for
-   whatever the current mechanism is (this has reportedly changed across
-   RouterOS releases). Push the image to a registry (Docker Hub/GHCR) first
-   if you're not building directly on the router:
+3. Добавьте контейнер. Получение прав `NET_ADMIN`/`/dev/net/tun` — та
+   часть, для которой я не могу дать проверенный синтаксис: смотрите
+   `/container/config` и документацию по Container для вашей версии
+   RouterOS — механизм, судя по всему, менялся от версии к версии.
+   Сначала залейте образ в registry (Docker Hub/GHCR), если не собираете
+   его прямо на роутере:
    ```
    /container/add remote-image=yourrepo/vless-mikrotik-client:latest \
        interface=veth-vless root-dir=disk1/vless-container envlist=vless-env \
@@ -141,16 +141,16 @@ guarantee, and expect to adjust it for your RouterOS version.
    /container/start vless-client
    ```
 
-4. Once the container's TUN interface comes up and becomes its default
-   route, route whatever traffic you want tunneled to `172.17.0.2` (the
-   container's veth address) as gateway, e.g.:
+4. Когда TUN-интерфейс контейнера поднимется и станет его маршрутом по
+   умолчанию, направьте нужный вам трафик на `172.17.0.2` (адрес veth
+   контейнера) как на шлюз, например:
    ```
    /ip/route/add dst-address=0.0.0.0/0 gateway=172.17.0.2 distance=1
    ```
-   Start narrow (a single test host or destination) before pointing the
-   router's entire default route at it.
+   Начните с малого (один тестовый хост или назначение), прежде чем
+   направлять на него весь маршрут по умолчанию роутера.
 
-If the container can't get `/dev/net/tun`/`NET_ADMIN` on your RouterOS
-version, TUN mode won't come up at all -- that would need a different
-approach (e.g. running this on a separate Linux box instead of RouterOS's
-own container feature).
+Если контейнер не сможет получить `/dev/net/tun`/`NET_ADMIN` на вашей
+версии RouterOS, режим TUN вообще не поднимется — тогда потребуется другой
+подход (например, запускать это на отдельной Linux-машине вместо
+встроенной функции Container в RouterOS).
