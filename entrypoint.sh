@@ -147,7 +147,10 @@ jq -n \
         }],
         "outbounds": [$outbound],
         "route": {
-            "rules": [{"protocol": "dns", "action": "hijack-dns"}],
+            "rules": [
+                {"action": "sniff"},
+                {"protocol": "dns", "action": "hijack-dns"}
+            ],
             "final": "vless-out",
             "auto_detect_interface": true,
             "default_domain_resolver": {"server": "local"}
