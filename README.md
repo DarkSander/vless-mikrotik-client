@@ -21,7 +21,7 @@ section for why.
 
 | Variable | Example | Notes |
 |---|---|---|
-| `VLESS_SERVER` | `cat.3dgrind.ru` | Server address (domain or IP) |
+| `VLESS_SERVER` | `vpn.srv.com` | Server address (domain or IP) |
 | `VLESS_PORT` | `4443` | Server port |
 | `VLESS_UUID` | `xxxxxxxx-xxxx-...` | User UUID |
 
