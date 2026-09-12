@@ -69,6 +69,19 @@ VLESS-сервером.
 | `DNS_SERVER` | `1.1.1.1` | резолвит домены клиентов через туннель (чтобы не было утечки DNS). Адрес самого VLESS-сервера при этом резолвится системным резолвером — см. ниже |
 | `LOG_LEVEL` | `info` | уровень логирования sing-box |
 
+## Готовый образ
+
+Опубликован в Docker Hub под `linux/arm64`, `linux/arm/v7` и `linux/amd64`:
+[dkxander/vless-mikrotik-client](https://hub.docker.com/r/dkxander/vless-mikrotik-client).
+Нужная архитектура выбирается автоматически.
+
+```
+docker pull dkxander/vless-mikrotik-client:latest
+```
+
+В RouterOS: `/container/add remote-image=dkxander/vless-mikrotik-client:latest …`.
+Теги: `latest` и версия sing-box внутри (`1.14.0`).
+
 ## Сборка образа
 
 ```bash
