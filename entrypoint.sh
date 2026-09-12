@@ -53,6 +53,11 @@ case "$VLESS_TRANSPORT" in
     *) fail "VLESS_TRANSPORT must be one of: tcp, ws (got '$VLESS_TRANSPORT')" ;;
 esac
 
+case "$TUN_STACK" in
+    system|gvisor|mixed) ;;
+    *) fail "TUN_STACK must be one of: system, gvisor, mixed (got '$TUN_STACK')" ;;
+esac
+
 # --- tls object (omitted entirely when security=none) ---
 if [ "$VLESS_SECURITY" = "none" ]; then
     TLS_JSON='{"enabled": false}'
@@ -109,6 +114,10 @@ if [ "$VLESS_TRANSPORT" = "ws" ]; then
 fi
 
 # --- full config ---
+# Запросы клиентов уходят в туннель (dns server "remote"), а адрес самого
+# VLESS-сервера резолвится системным резолвером ("local") через
+# default_domain_resolver: иначе домен сервера пришлось бы разрешать через
+# ещё не поднятый туннель, и старт зависал бы.
 jq -n \
     --arg loglevel "$LOG_LEVEL" \
     --arg dns_server "$DNS_SERVER" \
@@ -120,7 +129,10 @@ jq -n \
     '{
         "log": {"level": $loglevel},
         "dns": {
-            "servers": [{"type": "udp", "tag": "remote", "server": $dns_server}],
+            "servers": [
+                {"type": "udp", "tag": "remote", "server": $dns_server},
+                {"type": "local", "tag": "local"}
+            ],
             "final": "remote"
         },
         "inbounds": [{
@@ -137,7 +149,8 @@ jq -n \
         "route": {
             "rules": [{"protocol": "dns", "action": "hijack-dns"}],
             "final": "vless-out",
-            "auto_detect_interface": true
+            "auto_detect_interface": true,
+            "default_domain_resolver": {"server": "local"}
         }
     }' > "$CONFIG_PATH"
 
